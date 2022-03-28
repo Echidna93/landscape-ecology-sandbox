@@ -1,9 +1,32 @@
+library(tidyverse)
 # make a square matrix for now
 make_landscape_matrix <- function(row, col){
    matrix(sample(c(0,1), replace=TRUE, size=row*col), nrow=row)
 }
 make_infection_matrix<-function(row,col){
    matrix(sample(c(0), replace=TRUE, size=row*col), nrow=row)
+}
+get_infected_deer<-function(data_frame){
+  for(i in 1:nrow(data_frame)){
+    if(data_frame[i,]$status == "I"){
+      infected_ind<-data_frame[i,]
+    }
+  }
+  infected_ind
+}
+
+# function that will return boolean value
+# if two deer share the same space and one of them is infected
+update_infection_statuses<-function(data_frame){
+  inf_ind<-get_infected_deer(data_frame)
+  for(i in 1:nrow(data_frame)){
+    if(data_frame[i,]$xloc==inf_ind$xloc &
+       data_frame[i,]$yloc==inf_ind$yloc &
+       (data_frame[i,]$status=="S")){
+      data_frame[i,]$status = "I"
+    }
+  }
+  data_frame
 }
 update_infection_matrix<-function(inf_matrix, data_frame){
   for(i in 1:nrow(data_frame)){
@@ -45,7 +68,7 @@ get_neighbors<-function(loc, nrow, ncol){
   for(i in -1:1){
     for(j in -1:1){
       # case 1 on left or right edge of matrix
-      if(!(loc[1]+i < 1 | loc[1]+i > nrow) | (loc[2]+j < 1 | loc[2]+j > ncol)){
+      if(!(loc[1]+i < 1 | loc[1]+i > nrow) & !(loc[2]+j < 1 | loc[2]+j > ncol)){
         l[[k]] <- c(loc[1] + i, loc[2] + j)
         k<-k+1
       }
@@ -56,14 +79,17 @@ get_neighbors<-function(loc, nrow, ncol){
 
 num_row=5
 num_col=5
-deer<-make_deer(3,num_row,1)
-deer
-landscape<-make_landscape_matrix(5,5)
+landscape<-make_landscape_matrix(5,5) 
 infection_matrix<-make_infection_matrix(5,5)
-infection_matrix
-infection_matrix<-update_infection_matrix(infection_matrix, deer)
-infection_matrix
-deer<-move(deer)
+deer<-make_deer(8,num_row,1)
+inf_ind<-get_infected_deer(deer)
+# deer<-deer %>% add_row(id=nrow(), xloc=inf_ind$xloc, yloc=inf_ind$yloc, status="S")
 deer
-infection_matrix<-update_infection_matrix(infection_matrix,deer)
-infection_matrix
+inf_ind<-get_infected_deer(deer)
+for(i in 1:5){
+  deer<-update_infection_statuses(deer)
+  infection_matrix<-update_infection_matrix(infection_matrix, deer)
+  print(infection_matrix)
+  deer<-move(deer)
+  print(deer)
+}

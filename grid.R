@@ -171,5 +171,5 @@ Num<-calc.dens(hab1=hab1,newloc.vec=newloc.vec, n.initial, inds=inds)
 #num<-as.numeric(Num[[1]])
 linear.pred<-(beta1*hab1+beta2*as.numeric(Num[[1]])+ beta3*as.numeric(Num[[1]])^2)
 linear.pred
-nbs<-get.neighbors(loc=newloc, mapdim=dim(linear.pred), n.offset=percep)
+nbs<-get.neighbors(loc=newloc, mdim(linear.pred), n.offset=percep)
 nbs
