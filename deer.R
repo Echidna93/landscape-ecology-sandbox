@@ -1,4 +1,5 @@
 library(tidyverse)
+library(plotrix)
 # make a square matrix for now
 make_landscape_matrix <- function(row, col){
    matrix(sample(c(0,1), replace=TRUE, size=row*col), nrow=row)
@@ -86,10 +87,26 @@ inf_ind<-get_infected_deer(deer)
 # deer<-deer %>% add_row(id=nrow(), xloc=inf_ind$xloc, yloc=inf_ind$yloc, status="S")
 deer
 inf_ind<-get_infected_deer(deer)
-for(i in 1:5){
+for(i in 1:10){
   deer<-update_infection_statuses(deer)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  print(infection_matrix)
+  print(infection_matrix )
   deer<-move(deer)
   print(deer)
+  # add a column with the extreme values (-1,1) to calculate
+  # the colors, then drop the extra column in the result
+  
+  # code for movement map
+  matplot(deer$xloc, deer$yloc,pch=1)
+  # code for "heatmap"
+  # cellcol<-color.scale(cbind(infection_matrix,
+  #                            c(8, rep(1,4))), c(0,1), 0, c(1,0))[,1:5]
+  # color2D.matplot(infection_matrix,cellcolors=cellcol,
+  #                 main="Landscape Infectivity Heatmap")
+  # # do the legend call separately to get the full range
+  # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
+  #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
+  
+  Sys.sleep(2)
 }
+color.scale
