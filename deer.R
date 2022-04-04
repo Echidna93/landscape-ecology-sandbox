@@ -1,3 +1,4 @@
+# TODO add comments to each function to document
 library(tidyverse)
 library(plotrix)
 # make a square matrix for now
@@ -15,20 +16,32 @@ get_infected_deer<-function(data_frame){
   }
   infected_ind
 }
+# TODO use the single parameter used in white's code for the location of the deer
+#' Updates individual values within dataframe
+#' @param data_frame holds data about deer
+#' @param infection_matrix holds data about current infectivity levels of landscape
+#' @export infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
 
-# function that will return boolean value
-# if two deer share the same space and one of them is infected
-update_infection_statuses<-function(data_frame){
+update_infection_statuses<-function(data_frame, infection_matrix, infectivity_threshold){
   inf_ind<-get_infected_deer(data_frame)
+  # TODO break this off into it's own function, maybe is_same_location
   for(i in 1:nrow(data_frame)){
-    if(data_frame[i,]$xloc==inf_ind$xloc &
-       data_frame[i,]$yloc==inf_ind$yloc &
-       (data_frame[i,]$status=="S")){
+    if((data_frame[i,]$xloc==inf_ind$xloc & data_frame[i,]$yloc==inf_ind$yloc & data_frame[i,]$status=="S") |
+       (is_cell_inf_val_above_threshold(infection_matrix[data_frame[i,]$xloc + data_frame[i,]$yloc],infectivity_threshold))){
       data_frame[i,]$status = "I"
     }
   }
   data_frame
 }
+
+# want a helper function that checks the infectivity value of the
+# currently occupied cell, if the cell is above a certain threshold
+# deer becomes infected
+
+is_cell_inf_val_above_threshold<-function(cell_value, infectivity_threshold){
+  cell_value>=infectivity_threshold
+}
+
 update_infection_matrix<-function(inf_matrix, data_frame){
   for(i in 1:nrow(data_frame)){
     if(data_frame[i,]$status == "I")
@@ -75,10 +88,15 @@ get_neighbors<-function(loc, nrow, ncol){
       }
     }
   }
-  l 
+  l
 }
+# Main simulation
+# TODO make main simulation loop, using functional? (lapply)
 
+# CONSTANTS
+# TODO look into making these changeable by a user in an x11() window?
 num_row=5
+infectivity_threshold=2
 num_col=5
 landscape<-make_landscape_matrix(5,5) 
 infection_matrix<-make_infection_matrix(5,5)
@@ -88,7 +106,7 @@ inf_ind<-get_infected_deer(deer)
 deer
 inf_ind<-get_infected_deer(deer)
 for(i in 1:10){
-  deer<-update_infection_statuses(deer)
+  deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   print(infection_matrix )
   deer<-move(deer)
@@ -97,15 +115,15 @@ for(i in 1:10){
   # the colors, then drop the extra column in the result
   
   # code for movement map
-  matplot(deer$xloc, deer$yloc,pch=1)
+  # matplot(deer$xloc, deer$yloc, type=,pch=1)
   # code for "heatmap"
-  # cellcol<-color.scale(cbind(infection_matrix,
-  #                            c(8, rep(1,4))), c(0,1), 0, c(1,0))[,1:5]
-  # color2D.matplot(infection_matrix,cellcolors=cellcol,
-  #                 main="Landscape Infectivity Heatmap")
-  # # do the legend call separately to get the full range
-  # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
-  #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
+  cellcol<-color.scale(cbind(infection_matrix,
+                             c(8, rep(1,4))), c(0,1), 0, c(1,0))[,1:5]
+  color2D.matplot(infection_matrix,cellcolors=cellcol,
+                  main="Landscape Infectivity Heatmap")
+  # do the legend call separately to get the full range
+  color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
+               rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
   
   Sys.sleep(2)
 }
