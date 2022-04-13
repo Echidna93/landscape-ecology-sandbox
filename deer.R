@@ -1,13 +1,28 @@
-# TODO add comments to each function to document
 library(tidyverse)
 library(plotrix)
-# make a square matrix for now
-make_landscape_matrix <- function(row, col){
-   matrix(sample(c(0,1), replace=TRUE, size=row*col), nrow=row)
+
+#' initiates a landcape matrix of vectors of random 0's and 1's
+#' @param nrow number of rows in matrix
+#' @param ncol number of columns in matrix
+#' @export
+make_landscape_matrix <- function(nrow, ncol){
+   matrix(sample(c(0,1), replace=TRUE, size=nrow*ncol), nrow=nrow)
 }
-make_infection_matrix<-function(row,col){
-   matrix(sample(c(0), replace=TRUE, size=row*col), nrow=row)
+
+#' initiates an infection matrix of all 0's
+#' @param nrow number of rows in matrix
+#' @param ncol number of columns in matrix
+#' @export
+make_infection_matrix<-function(nrow,ncol){
+   matrix(sample(c(0), replace=TRUE, size=nrow*ncol), nrow=nrow)
 }
+
+# TODO return a list of ALL INFECTED DEER, this currently only returns the first one seen by the iterator
+
+#' Helper function
+#' want it to return a list of infected deer
+#' @param data_frame holds data about deer
+#' @export
 get_infected_deer<-function(data_frame){
   for(i in 1:nrow(data_frame)){
     if(data_frame[i,]$status == "I"){
@@ -16,12 +31,14 @@ get_infected_deer<-function(data_frame){
   }
   infected_ind
 }
+
 # TODO use the single parameter used in white's code for the location of the deer
+
 #' Updates individual values within dataframe
 #' @param data_frame holds data about deer
 #' @param infection_matrix holds data about current infectivity levels of landscape
-#' @export infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
-
+#' @param infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
+#' @export
 update_infection_statuses<-function(data_frame, infection_matrix, infectivity_threshold){
   inf_ind<-get_infected_deer(data_frame)
   # TODO break this off into it's own function, maybe is_same_location
@@ -34,14 +51,20 @@ update_infection_statuses<-function(data_frame, infection_matrix, infectivity_th
   data_frame
 }
 
-# want a helper function that checks the infectivity value of the
-# currently occupied cell, if the cell is above a certain threshold
-# deer becomes infected
-
+#' Helper function
+#' Determines if current cell value is above acceptable "infection" threshold
+#' @param cell_value current cell coordinate(s)
+#' @param infection_matrix holds data about current infectivity levels of landscape
+#' @param infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
+#' @export
 is_cell_inf_val_above_threshold<-function(cell_value, infectivity_threshold){
   cell_value>=infectivity_threshold
 }
 
+#' Updates the matrix that holds infection levels for the landscape
+#' @param data_frame holds data about deer
+#' @param inf_matrix holds data about current infectivity levels of landscape
+#' @export
 update_infection_matrix<-function(inf_matrix, data_frame){
   for(i in 1:nrow(data_frame)){
     if(data_frame[i,]$status == "I")
@@ -49,6 +72,10 @@ update_infection_matrix<-function(inf_matrix, data_frame){
   }
   inf_matrix
 }
+
+#' Updates individual locations
+#' @param data_frame holds data about deer
+#' @export
 move<-function(data_frame){
   for(i in 1:nrow(data_frame)){
     nbs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
@@ -58,7 +85,12 @@ move<-function(data_frame){
   }
   data_frame
 }
-# want function to create dataframe of deer
+
+#' initiates a data frame of deer
+#' @param n.initial # deer
+#' @param dim dimension of a vector for random assignment of location
+#' @param nI # infected individuals to start
+#' @export
 make_deer <- function(n.initial,dim, nI){
   id<-1:n.initial
   xloc<-round(runif(n.initial, min=1, max=dim))
@@ -70,9 +102,13 @@ make_deer <- function(n.initial,dim, nI){
   inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
   inds
 }
-# takes in vector(s), matrix points
-# @param matrix
-# returns neighborhood of cells as a list of vectors
+
+#' Helper function
+#' returns neighborhood of cells as a list of vectors
+#' @param loc current coordinates of individual
+#' @param nrow # of rows in landscape matrix
+#' @param ncol # columns in landscape matrix
+#' @export
 get_neighbors<-function(loc, nrow, ncol){
   # list iterator
   k=1
