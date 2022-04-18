@@ -51,6 +51,12 @@ update_infection_statuses<-function(data_frame, infection_matrix, infectivity_th
   data_frame
 }
 
+# new function 
+# check locations of each deer
+# check_locations<-function(ind, data_frame){
+#   for(i in data_frame)
+# }
+
 #' Helper function
 #' Determines if current cell value is above acceptable "infection" threshold
 #' @param cell_value current cell coordinate(s)
