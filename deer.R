@@ -24,12 +24,19 @@ make_infection_matrix<-function(nrow,ncol){
 #' @param data_frame holds data about deer
 #' @export
 get_infected_deer<-function(data_frame){
+  # iterator for empty infected_inds array
+  j<-1
+  infected_inds<-rep()
   for(i in 1:nrow(data_frame)){
     if(data_frame[i,]$status == "I"){
-      infected_ind<-data_frame[i,]
+      infected_inds[[j]]<-c(data_frame[i,]$id,
+                            data_frame[i,]$xloc,
+                            data_frame[i,]$yloc
+                            )
+      j<-j+1
     }
   }
-  infected_ind
+  infected_inds
 }
 
 # TODO use the single parameter used in white's code for the location of the deer
@@ -40,12 +47,23 @@ get_infected_deer<-function(data_frame){
 #' @param infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
 #' @export
 update_infection_statuses<-function(data_frame, infection_matrix, infectivity_threshold){
-  inf_ind<-get_infected_deer(data_frame)
+  inf_inds<-get_infected_deer(data_frame)
+  print(length(inf_inds))
   # TODO break this off into it's own function, maybe is_same_location
   for(i in 1:nrow(data_frame)){
-    if((data_frame[i,]$xloc==inf_ind$xloc & data_frame[i,]$yloc==inf_ind$yloc & data_frame[i,]$status=="S") |
-       (is_cell_inf_val_above_threshold(infection_matrix[data_frame[i,]$xloc + data_frame[i,]$yloc],infectivity_threshold))){
-      data_frame[i,]$status = "I"
+    if(data_frame[i,]$status=="S"){
+      if(is_cell_inf_val_above_threshold(infection_matrix[data_frame[i,]$xloc + data_frame[i,]$yloc],infectivity_threshold)){
+        data_frame[i,]$status = "I"
+      }
+      else{
+        for(j in 1:length(inf_inds)) {
+          if(data_frame[i,]$xloc==inf_inds[[j]][2] & 
+              data_frame[i,]$yloc==inf_inds[[j]][3] &
+              !(data_frame[i,]$id==inf_inds[[j]][1])){
+           data_frame[i,]$status = "I"
+          }
+        }
+      }
     }
   }
   data_frame
@@ -134,6 +152,23 @@ get_neighbors<-function(loc, nrow, ncol){
 }
 # Main simulation
 # TODO make main simulation loop, using functional? (lapply)
+check_inds_locs<-function(ind, data_frame){
+  for(i in 1:nrow(data_frame)){
+    if(is_same_location(ind, data_frame[i,]) & is_not_same_id(ind, data_frame[i,])){
+      
+    }
+  }
+}
+
+#helper function is location the same
+is_same_location<-function(ind1, ind2){
+  (ind1$xloc == ind1$yloc) & (ind1$yloc == ind2$yloc)
+}
+
+#helper checks if two ids are the same
+is_not_same_id<-function(ind1, ind2){
+  !(ind1$id == ind2$id)
+}
 
 # CONSTANTS
 # TODO look into making these changeable by a user in an x11() window?
@@ -143,8 +178,6 @@ num_col=5
 landscape<-make_landscape_matrix(5,5) 
 infection_matrix<-make_infection_matrix(5,5)
 deer<-make_deer(8,num_row,1)
-inf_ind<-get_infected_deer(deer)
-# deer<-deer %>% add_row(id=nrow(), xloc=inf_ind$xloc, yloc=inf_ind$yloc, status="S")
 deer
 inf_ind<-get_infected_deer(deer)
 for(i in 1:10){
