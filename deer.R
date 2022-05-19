@@ -5,8 +5,13 @@ library(plotrix)
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
 #' @export
-make_landscape_matrix <- function(nrow, ncol){
-   matrix(sample(c(0,1), replace=TRUE, size=nrow*ncol), nrow=nrow)
+make_landscape_matrix <- function(nrow, ncol, binary=TRUE){
+   if(!binary){
+     matrix(sample(c(runif(2,0,1)), replace=TRUE, size=5*5), nrow=5)
+   }
+   else{
+    matrix(sample(c(0,1), replace=TRUE, size=nrow*ncol), nrow=nrow)
+  }
 }
 
 #' initiates an infection matrix of all 0's
@@ -172,7 +177,7 @@ is_not_same_id<-function(ind1, ind2){
 num_row=5
 infectivity_threshold=2
 num_col=5
-landscape<-make_landscape_matrix(5,5) 
+landscape<-make_landscape_matrix(5,5, FALSE) 
 infection_matrix<-make_infection_matrix(5,5)
 deer<-make_deer(8,num_row,1)
 deer
