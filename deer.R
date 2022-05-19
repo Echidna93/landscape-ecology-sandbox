@@ -16,9 +16,6 @@ make_landscape_matrix <- function(nrow, ncol){
 make_infection_matrix<-function(nrow,ncol){
    matrix(sample(c(0), replace=TRUE, size=nrow*ncol), nrow=nrow)
 }
-
-# TODO return a list of ALL INFECTED DEER, this currently only returns the first one seen by the iterator
-
 #' Helper function
 #' want it to return a list of infected deer
 #' @param data_frame holds data about deer
