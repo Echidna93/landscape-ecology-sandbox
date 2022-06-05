@@ -1,5 +1,6 @@
 library(tidyverse)
 library(plotrix)
+library('plot.matrix')
 #' initiates a landscape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
@@ -68,7 +69,6 @@ get_infected_deer<-function(data_frame){
 #' @export
 update_infection_statuses<-function(data_frame, infection_matrix, infectivity_threshold){
   inf_inds<-get_infected_deer(data_frame)
-  print(length(inf_inds))
   # TODO break this off into it's own function, maybe is_same_location
   for(i in 1:nrow(data_frame)){
     if(data_frame[i,]$status=="S"){
@@ -114,14 +114,21 @@ update_infection_matrix<-function(inf_matrix, data_frame){
     if(data_frame[i,]$status == "I")
       inf_matrix[data_frame[i,]$xloc, data_frame[i,]$yloc]<-inf_matrix[data_frame[i,]$xloc,data_frame[i,]$yloc] + 1
   }
-  inf_matrix
+  max_val<-max(inf_matrix)
+  apply(inf_matrix, 2, divide_by_max, max=max_val)
 }
 
+# helper function
+# divides by max value of matrix
+divide_by_max<-function(x, max){
+  x / max
+}
 #' Updates individual locations
 #' @param data_frame holds data about deer
 #' @export
-move<-function(data_frame, landscape, d_mat){
+move<-function(data_frame, landscape, nrow, ncol){
   for(i in 1:nrow(data_frame)){
+    d_mat<-make_density_matrix(nrow,ncol,data_frame)
     nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col, landscape)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
     new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs)
@@ -143,9 +150,6 @@ make_decision<-function(landscape, d_mat, nbrs){
   decision_val<-landscape[nbrs[[1]][1],][nbrs[[1]][2]] - d_mat[nbrs[[1]][1],][nbrs[[1]][2]]
     for(i in 1:length(nbrs)){
       # recalculate value of landscape matrix to account for conspecific dens.
-      print(d_mat[nbrs[[i]][1]][nbrs[[i]][2]])
-      print(landscape[nbrs[[i]][1]][nbrs[[i]][2]])
-      print(decision_val)
       crnt_adjstd_val <- (landscape[nbrs[[i]][1],][nbrs[[i]][2]] - d_mat[nbrs[[i]][1],][nbrs[[i]][2]])
       if(crnt_adjstd_val > decision_val){
         # want decision to take into account conspecific density
@@ -222,33 +226,33 @@ infectivity_threshold=2
 num_col=5
 landscape<-make_landscape_matrix(5,5, FALSE)
 infection_matrix<-make_infection_matrix(5,5)
-deer<-make_deer(8,num_row,1)
-d_mat<-make_density_matrix(5, 5, deer)
-print(d_mat)
+deer<-make_deer(16,num_row,1)
 inf_ind<-get_infected_deer(deer)
-for(i in 1:10){
+for(i in 1:50){
+  print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   print(infection_matrix)
-  print(d_mat)
-  deer<-move(deer, landscape, d_mat)
+  deer<-move(deer, landscape, nrow(landscape), ncol(landscape))
   print(deer)
   d_mat<-make_density_matrix(5,5,deer)
   print(d_mat)
+  print(landscape)
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
 
   # code for movement map
   # matplot(deer$xloc, deer$yloc, type=,pch=1)
   # code for "heatmap"
-  cellcol<-color.scale(cbind(infection_matrix,
-                             c(8, rep(1,4))), c(0,1), 0, c(1,0))[,1:5]
-  color2D.matplot(infection_matrix,cellcolors=cellcol,
-                  main="Landscape Infectivity Heatmap")
-  # do the legend call separately to get the full range
-  color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
-               rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
-
+  # cellcol<-color.scale(cbind(infection_matrix,
+  #                            c(0:1)))
+  # color2D.matplot(infection_matrix,cellcolors=cellcol,
+  #                 main="Landscape Infectivity Heatmap")
+  # # do the legend call separately to get the full range
+  # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
+  #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
+  par(mar=c(5.1,4.1,4.1,4.1))
+  plot(infection_matrix)
   Sys.sleep(2)
 }
 
