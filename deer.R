@@ -1,16 +1,18 @@
 library(tidyverse)
 library(plotrix)
-
+# flag to denote if we are using a binary or non-binary landscape
 #' initiates a landcape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
 #' @export
-make_landscape_matrix <- function(nrow, ncol, binary=TRUE){
+make_landscape_matrix <- function(numrow, numcol, binary=TRUE){
    if(!binary){
-     matrix(sample(c(runif(2,0,1)), replace=TRUE, size=5*5), nrow=5)
+     # TODO replace later with something better
+     # matrix(sample(c(runif(2,0,1)), replace=TRUE, size=5*5), nrow=5)
+     matrix(runif(numrow*numcol,0,1),ncol=numcol)
    }
    else{
-    matrix(sample(c(0,1), replace=TRUE, size=nrow*ncol), nrow=nrow)
+    matrix(sample(c(0,1), replace=TRUE, size=numrow*numcol), nrow=numrow)
   }
 }
 
@@ -102,14 +104,43 @@ update_infection_matrix<-function(inf_matrix, data_frame){
 #' Updates individual locations
 #' @param data_frame holds data about deer
 #' @export
-move<-function(data_frame){
+move<-function(data_frame, landscape){
   for(i in 1:nrow(data_frame)){
     nbs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
-    new_loc<-nbs[[round(runif(1,1,length(nbs)))]]
+    # new_loc<-nbs[[round(runif(1,1,length(nbs)))]]
+    new_loc<-make_decision(landscape, nbs)
     data_frame[i,]$xloc<-new_loc[[1]]
     data_frame[i,]$yloc<-new_loc[[2]]
   }
   data_frame
+}
+
+#  Chooses best possible landscape component to move to
+#' TODO alter in the case of an make_decision being fed an empty list
+#' TODO implement sorting function
+#' @param 
+#' @export
+is_empty<-function(list){
+  length(list) == 0
+}
+
+#' Chooses best possible landscape component to move to
+#' TODO alter in the case of an make_decision being fed an empty list, make 
+#' else case
+#' TODO implement sorting function
+#' @param 
+#' @export
+make_decision<-function(landscape, nbs){
+  # assign decision to be the first element by default--make comparison
+  decision<-landscape[nbs[[1]][1],][nbs[[1]][2]]
+  if(!is_empty(nbs)){
+    for(i in 1:length(nbs)){
+      if(landscape[nbs[[i]][1],][nbs[[i]][2]] > decision){
+        decision<-nbs[[i]]
+      }
+    }
+  }
+  decision
 }
 
 #' initiates a data frame of deer
@@ -177,7 +208,8 @@ is_not_same_id<-function(ind1, ind2){
 num_row=5
 infectivity_threshold=2
 num_col=5
-landscape<-make_landscape_matrix(5,5, FALSE) 
+landscape<-make_landscape_matrix(5,5, FALSE)
+# landscape
 infection_matrix<-make_infection_matrix(5,5)
 deer<-make_deer(8,num_row,1)
 deer
@@ -186,7 +218,7 @@ for(i in 1:10){
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   print(infection_matrix )
-  deer<-move(deer)
+  deer<-move(deer, landscape)
   print(deer)
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
