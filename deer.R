@@ -1,6 +1,7 @@
 library(tidyverse)
 library(plotrix)
 library('plot.matrix')
+
 #' initiates a landscape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
@@ -40,6 +41,7 @@ make_density_matrix <- function(numrow, numcol, data_frame){
 make_infection_matrix<-function(nrow,ncol){
    matrix(sample(c(0), replace=TRUE, size=nrow*ncol), nrow=nrow)
 }
+
 #' Helper function
 #' want it to return a list of infected deer
 #' @param data_frame holds data about deer
