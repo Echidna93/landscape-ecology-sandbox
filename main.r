@@ -1,4 +1,4 @@
-library(tidyverse)
+# library(tidyverse)
 library(plotrix)
 library('plot.matrix')
 
@@ -13,7 +13,7 @@ make_landscape_matrix <- function(numrow, numcol, binary=TRUE){
      matrix(runif(numrow*numcol,0,1),ncol=numcol)
    }
    else{
-    matrix(sample(c(0,1), replace=TRUE, size=numrow*numcol), nrow=numrow)
+    matrix(sample(c(1,2,3), replace=TRUE, size=numrow*numcol), nrow=numrow)
   }
 }
 #' initiates a matrix to track density at each cell
@@ -226,7 +226,8 @@ is_not_same_id<-function(ind1, ind2){
 num_row=5
 infectivity_threshold=2
 num_col=5
-landscape<-make_landscape_matrix(5,5, FALSE)
+landscape<-make_landscape_matrix(5,5, TRUE)
+landscape
 infection_matrix<-make_infection_matrix(5,5)
 deer<-make_deer(16,num_row,1)
 inf_ind<-get_infected_deer(deer)
