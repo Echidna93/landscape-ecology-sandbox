@@ -14,6 +14,6 @@ Deer <- R6Class("Deer", list(
     self$status <- status
   })
 )
-
-d<-Deer$new(1, "M", 1, 2, "I")
-d
+# 
+# d<-Deer$new(1, "M", 1, 2, "I")
+# d
