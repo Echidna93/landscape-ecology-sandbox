@@ -2,6 +2,12 @@
 library(plotrix)
 library('plot.matrix')
 
+
+percep <- 2
+num_row=5
+infectivity_threshold=2
+num_col<-5
+
 #' initiates a landscape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
@@ -190,8 +196,8 @@ get_neighbors<-function(loc, nrow, ncol, landscape){
   l<-list()
   # check if either x,y element of loc is greater than
   # the dimension of the landscape matrix
-  for(i in -1:1){
-    for(j in -1:1){
+  for(i in -percep:percep){
+    for(j in -percep:percep){
       # case 1 on left or right edge of matrix
       if(!(loc[1]+i < 1 | loc[1]+i > nrow) & !(loc[2]+j < 1 | loc[2]+j > ncol)){
         l[[k]] <- c(loc[1] + i, loc[2] + j)
@@ -223,9 +229,6 @@ is_not_same_id<-function(ind1, ind2){
 
 # CONSTANTS
 # TODO look into making these changeable by a user in an x11() window?
-num_row=5
-infectivity_threshold=2
-num_col=5
 landscape<-make_landscape_matrix(5,5, TRUE)
 landscape
 infection_matrix<-make_infection_matrix(5,5)
