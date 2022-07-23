@@ -51,7 +51,7 @@ make_infection_matrix<-function(nrow,ncol){
 #' Helper function
 #' want it to return a list of infected deer
 #' @param data_frame holds data about deer
-#' @export
+#' @exportk*
 get_infected_deer<-function(data_frame){
   # iterator for empty infected_inds array
   j<-1
@@ -137,7 +137,7 @@ divide_by_max<-function(x, max){
 move<-function(data_frame, landscape, nrow, ncol){
   for(i in 1:nrow(data_frame)){
     d_mat<-make_density_matrix(nrow,ncol,data_frame)
-    nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col, landscape)
+    nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
     new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs)
     data_frame[i,]$xloc<-new_loc[[1]]
@@ -191,7 +191,7 @@ make_deer <- function(n.initial,dim, nI){
 #' @param nrow # of rows in landscape matrix
 #' @param ncol # columns in landscape matrix
 #' @export
-get_neighbors<-function(loc, nrow, ncol, landscape){
+get_neighbors<-function(loc, nrow, ncol){
   k=1
   l<-list()
   # check if either x,y element of loc is greater than
@@ -238,12 +238,8 @@ for(i in 1:50){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  print(infection_matrix)
   deer<-move(deer, landscape, nrow(landscape), ncol(landscape))
-  print(deer)
   d_mat<-make_density_matrix(5,5,deer)
-  print(d_mat)
-  print(landscape)
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
 
@@ -257,8 +253,24 @@ for(i in 1:50){
   # # do the legend call separately to get the full range
   # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
   #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
-  par(mar=c(5.1,4.1,4.1,4.1))
-  plot(infection_matrix)
+  par(mfrow=c(1,2))
+  plot(infection_matrix,
+            axis.col=NULL,
+            axis.row=NULL,
+            xlab="",
+            ylab=""
+       )
+  plot(landscape,
+            digits=0,
+            col=c("green", "white", "blue"),
+            axis.col=NULL,
+            axis.row=NULL,
+            xlab="",
+            ylab="")
+  # legend(x = "topright",
+  #        inset=c(-0.45, 0),
+  #        legend=c("forest", "plains", "open water"),
+  #        col="green", "white", "blue")
   Sys.sleep(2)
 }
 
