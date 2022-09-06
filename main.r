@@ -8,6 +8,92 @@ num_row=5
 infectivity_threshold=2
 num_col<-5
 
+
+
+#' Create neutral landscape maps
+#' 
+#' Use standard methods to generate fractal maps. Binary and continuous surfaces may be produced.
+#' 
+#' @param k integer. The extent of the map (2^k+1)^2 pixels
+#' @param h numeric. Level of aggregation in the map.
+#' @param p numeric (0,1). The proportion of map in habitat=1
+#' @param binary logical. If TRUE, a 0/1 categorical landscape is produced.
+#' @author Shannon Pittman, James Forester, modified by Lauren White
+#' @export
+#' @example examples/neutral.landscape_example.R
+fracland_mod <- function(k, h, p, binary = TRUE) {
+  ## Function for creating neutral landscapes Shannon Pittman University of Minnesota May, 2013 k = the extent of the map (2^k+1)^2 pixels h =
+  ## how clumped the map should be (ranging from ?? to ??) -- weird behavior at higher values p = proportion of map in habitat 1 binary =
+  ## plotflag == if TRUE will plot a filled contour version of the matrix
+  
+  ## function call: testmap=land(6,1,.5,FALSE,TRUE)
+  A <- 2^k + 1  # Scalar-determines length of landscape matrix
+  
+  #Right now, as written (1-p) represents the amount of habitat listed as "1"
+  B <- matrix(0, A, A)  # Creates landscape matrix
+  
+  B[1, 1] <- 0
+  B[1, A] <- 0
+  B[A, 1] <- 0
+  B[A, A] <- 0
+  
+  
+  iter <- 1
+  for (iter in 1:k) {
+    scalef <- (0.5 + (1 - h)/2)^(iter)
+    
+    d <- 2^(k - iter)
+    
+    # ALL SQUARE STEPS#
+    for (i in seq(d + 1, A - d, 2 * d)) {
+      for (j in seq(d + 1, A - d, 2 * d)) {
+        B[i, j] <- mean(c(B[i - d, j - d], B[i - d, j + d], B[i + d, j - d], B[i + d, j + d])) + scalef * rnorm(n = 1)
+      }
+    }
+    
+    # OUTSIDE DIAMOND STEP#
+    for (j in seq(d + 1, A - d, 2 * d)) {
+      B[1, j] <- mean(c(B[1, j - d], B[1, j + d], B[1 + d, j])) + scalef * rnorm(n = 1)
+      B[A, j] <- mean(c(B[A, j - d], B[A, j + d], B[A - d, j])) + scalef * rnorm(n = 1)
+    }
+    
+    for (i in seq(d + 1, A - d, 2 * d)) {
+      B[i, 1] <- mean(c(B[i - d, 1], B[i + d, 1], B[i, 1 + d])) + scalef * rnorm(n = 1)
+      B[i, A] <- mean(c(B[i - d, A], B[i + d, A], B[i, A - d])) + scalef * rnorm(n = 1)
+    }
+    
+    # INSIDE DIAMOND STEP#
+    if (2 * d + 1 <= A - 2 * d) {
+      for (i in seq(d + 1, A - d, 2 * d)) {
+        for (j in seq(2 * d + 1, A - 2 * d, 2 * d)) {
+          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1)
+        }
+      }
+      
+      for (i in seq(2 * d + 1, A - 2 * d, 2 * d)) {
+        for (j in seq(d + 1, A - d, 2 * d)) {
+          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1)
+        }
+      }
+    }
+    
+    iter <- iter + 1
+  }
+  
+  if (binary == T) {
+    R <- sort(B)
+    PosR <- (1 - p) * length(R)  #larger values become habitat, designated as 1
+    pval <- R[PosR]
+    T1 <- which(B > pval)
+    T2 <- which(B <= pval)
+    B[T1] <- 1  #habitat is 1
+    B[T2] <- 0
+  } 
+  return(B)
+}
+
+
+
 #' initiates a landscape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
@@ -22,6 +108,7 @@ make_landscape_matrix <- function(numrow, numcol, binary=TRUE){
     matrix(sample(c(1,2,3), replace=TRUE, size=numrow*numcol), nrow=numrow)
   }
 }
+
 #' initiates a matrix to track density at each cell
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
@@ -41,11 +128,11 @@ make_density_matrix <- function(numrow, numcol, data_frame){
 }
 
 #' initiates an infection matrix of all 0's
-#' @param nrow number of rows in matrix
-#' @param ncol number of columns in matrix
+#' @param k number of rows in matrix
 #' @export
-make_infection_matrix<-function(nrow,ncol){
-   matrix(sample(c(0), replace=TRUE, size=nrow*ncol), nrow=nrow)
+make_infection_matrix<-function(k){
+   A <- 2^k + 1
+   matrix(0,A,A)
 }
 
 #' Helper function
@@ -96,12 +183,6 @@ update_infection_statuses<-function(data_frame, infection_matrix, infectivity_th
   }
   data_frame
 }
-
-# new function 
-# check locations of each deer
-# check_locations<-function(ind, data_frame){
-#   for(i in data_frame)
-# }
 
 #' Helper function
 #' Determines if current cell value is above acceptable "infection" threshold
@@ -227,18 +308,39 @@ is_not_same_id<-function(ind1, ind2){
   !(ind1$id == ind2$id)
 }
 
+recover_inds<-function(data_frame, gamma){
+  infected<-which(data_frame$status=="I" ) #which individuals are currently infected?
+  if(length(infected>0)){
+    rec.prob<-runif(length(infected), min=0, max=1)
+    for (i in 1:length(infected)){
+      if(rec.prob[i]<= gamma){
+        data_frame$status[infected[i]]<-"R"
+      }
+    }
+  }
+  return(data_frame)
+}
+
+
 # CONSTANTS
 # TODO look into making these changeable by a user in an x11() window?
 landscape<-make_landscape_matrix(5,5, TRUE)
 landscape
-infection_matrix<-make_infection_matrix(5,5)
+
+
+l2 <-fracland_mod(k=5,h=0.5,p=0.5,binary=TRUE)
+print("here")
+l2
+infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(16,num_row,1)
-inf_ind<-get_infected_deer(deer)
+gamma=0.1 # recovery rate
 for(i in 1:50){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
+  deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  deer<-move(deer, landscape, nrow(landscape), ncol(landscape))
+  deer<-move(deer, l2, nrow(l2), ncol(l2))
+  print(deer)
   d_mat<-make_density_matrix(5,5,deer)
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
@@ -260,9 +362,9 @@ for(i in 1:50){
             xlab="",
             ylab=""
        )
-  plot(landscape,
+  plot(l2,
             digits=0,
-            col=c("green", "white", "blue"),
+            col=c("green", "white"),
             axis.col=NULL,
             axis.row=NULL,
             xlab="",
