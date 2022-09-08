@@ -7,6 +7,7 @@ percep <- 2
 num_row=5
 infectivity_threshold=2
 num_col<-5
+is_binary = FALSE
 
 
 
@@ -80,7 +81,7 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
     iter <- iter + 1
   }
   
-  if (binary == T) {
+  if (binary) {
     R <- sort(B)
     PosR <- (1 - p) * length(R)  #larger values become habitat, designated as 1
     pval <- R[PosR]
@@ -215,12 +216,12 @@ divide_by_max<-function(x, max){
 #' Updates individual locations
 #' @param data_frame holds data about deer
 #' @export
-move<-function(data_frame, landscape, nrow, ncol){
+move<-function(data_frame, landscape, nrow, ncol, binary){
   for(i in 1:nrow(data_frame)){
     d_mat<-make_density_matrix(nrow,ncol,data_frame)
     nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
-    new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs)
+    new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary)
     data_frame[i,]$xloc<-new_loc[[1]]
     data_frame[i,]$yloc<-new_loc[[2]]
   }
@@ -233,20 +234,38 @@ move<-function(data_frame, landscape, nrow, ncol){
 #' TODO implement sorting function
 #' @param 
 #' @export
-make_decision<-function(landscape, d_mat, nbrs){
+make_decision<-function(landscape, d_mat, nbrs, binary){
   # assign decision to be the first element by default--make comparison
   decision_vec<-c(nbrs[[1]][1],nbrs[[1]][2])
   decision_val<-landscape[nbrs[[1]][1],][nbrs[[1]][2]] - d_mat[nbrs[[1]][1],][nbrs[[1]][2]]
-    for(i in 1:length(nbrs)){
-      # recalculate value of landscape matrix to account for conspecific dens.
-      crnt_adjstd_val <- (landscape[nbrs[[i]][1],][nbrs[[i]][2]] - d_mat[nbrs[[i]][1],][nbrs[[i]][2]])
-      if(crnt_adjstd_val > decision_val){
-        # want decision to take into account conspecific density
-        # want list of values from the landscape matrix
-        decision_vec<-c(nbrs[[i]][1], nbrs[[i]][2])
+  # recalculate value of landscape matrix to account for conspecific dens.
+      if(binary){
+        i<-1
+        while(!is_habitat(landscape, nbrs[[i]][1], nbrs[[i]][2])){
+            #i<-round(runif(1, min=1, max=length(nbrs[1,])))
+            i<-i+1
+            print(i)
+          }
+        }
+      else{
+        for(j in 1:length(nbrs)){
+          crnt_adjstd_val <- (landscape[nbrs[[j]][1],][nbrs[[j]][2]] - d_mat[nbrs[[j]][1],][nbrs[[j]][2]])
+          if(crnt_adjstd_val > decision_val){
+            # want decision to take into account conspecific density
+            # want list of values from the landscape matrix
+            decision_vec<-c(nbrs[[j]][1], nbrs[[j]][2])
+          }
+        }
       }
-    }
   decision_vec
+}
+
+#' helper function
+#' creates xloc and yloc for initialization of deer
+#' ensures that deer are only placed on habitat in the binary case
+#' 
+is_habitat <- function(landscape, xloc, yloc){
+  (landscape[xloc,][yloc] == 1)
 }
 
 #' initiates a data frame of deer
@@ -254,10 +273,16 @@ make_decision<-function(landscape, d_mat, nbrs){
 #' @param dim dimension of a vector for random assignment of location
 #' @param nI # infected individuals to start
 #' @export
-make_deer <- function(n.initial,dim, nI){
+make_deer <- function(n.initial, dim, nI, binary, landscape){
   id<-1:n.initial
   xloc<-round(runif(n.initial, min=1, max=dim))
   yloc<-round(runif(n.initial, min=1, max=dim))
+  if(binary){
+    while(!is_habitat(landscape, xloc, yloc)){
+      xloc<-round(runif(n.initial, min=1, max=dim))
+      yloc<-round(runif(n.initial, min=1, max=dim))
+    }
+  }
   # vec<-Cmatrix(yloc,xloc,dim)
   I<-sample(1:n.initial, nI)
   status<-rep("S", times=n.initial)
@@ -324,22 +349,18 @@ recover_inds<-function(data_frame, gamma){
 
 # CONSTANTS
 # TODO look into making these changeable by a user in an x11() window?
-landscape<-make_landscape_matrix(5,5, TRUE)
+
+landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
 landscape
-
-
-l2 <-fracland_mod(k=5,h=0.5,p=0.5,binary=TRUE)
-print("here")
-l2
 infection_matrix<-make_infection_matrix(5)
-deer<-make_deer(16,num_row,1)
+deer<-make_deer(16,num_row,1,is_binary, landscape)
 gamma=0.1 # recovery rate
 for(i in 1:50){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  deer<-move(deer, l2, nrow(l2), ncol(l2))
+  deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
   print(deer)
   d_mat<-make_density_matrix(5,5,deer)
   # add a column with the extreme values (-1,1) to calculate
@@ -362,8 +383,7 @@ for(i in 1:50){
             xlab="",
             ylab=""
        )
-  plot(l2,
-            digits=0,
+  plot(landscape,
             col=c("green", "white"),
             axis.col=NULL,
             axis.row=NULL,
