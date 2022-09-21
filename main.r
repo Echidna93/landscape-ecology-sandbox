@@ -114,15 +114,15 @@ make_landscape_matrix <- function(numrow, numcol, binary=TRUE){
 #' @param nrow number of rows in matrix
 #' @param ncol number of columns in matrix
 #' @export
-make_density_matrix <- function(numrow, numcol, data_frame){
+make_density_matrix <- function(numrow, numcol, inds){
   d_mat<-matrix(sample(c(0), replace=TRUE, size=numrow*numcol), nrow=numrow)
-  for(i in 1:nrow(data_frame)){
+  for(i in 1:length(inds)){
     # temp mat holds number of deer want density
-    d_mat[data_frame[i,]$xloc,][data_frame[i,]$yloc] <- d_mat[data_frame[i,]$xloc,][data_frame[i,]$yloc] + 1
+    d_mat[inds[[i]]$xloc,][inds[[i]]$yloc] <- d_mat[inds[[i]]$xloc,][inds[[i]]$yloc] + 1
   }
   for(i in 1:numrow){
     for(j in 1:numcol){
-        d_mat[i,][j] <- d_mat[i,][j] / nrow(data_frame)
+        d_mat[i,][j] <- d_mat[i,][j] / length(inds)
       }
   }
   d_mat
@@ -139,18 +139,12 @@ make_infection_matrix<-function(k){
 #' Helper function
 #' want it to return a list of infected deer
 #' @param data_frame holds data about deer
-#' @exportk*
-get_infected_deer<-function(data_frame){
-  # iterator for empty infected_inds array
-  j<-1
+#' @export
+get_infected_deer<-function(inds){
   infected_inds<-rep()
-  for(i in 1:nrow(data_frame)){
-    if(data_frame[i,]$status == "I"){
-      infected_inds[[j]]<-c(data_frame[i,]$id,
-                            data_frame[i,]$xloc,
-                            data_frame[i,]$yloc
-                            )
-      j<-j+1
+  for(i in 1:length(inds)){
+    if(inds[[i]]$status == "I"){
+      infected_inds<-append(infected_inds, i)
     }
   }
   infected_inds
@@ -163,26 +157,33 @@ get_infected_deer<-function(data_frame){
 #' @param infection_matrix holds data about current infectivity levels of landscape
 #' @param infectivity_threshold some amount of disease where infection automatically happens (definitely subject to change)
 #' @export
-update_infection_statuses<-function(data_frame, infection_matrix, infectivity_threshold){
-  inf_inds<-get_infected_deer(data_frame)
+update_infection_statuses<-function(inds, infection_matrix, infectivity_threshold){
+  inf_ind_indx<-get_infected_deer(inds)
   # TODO break this off into it's own function, maybe is_same_location
-  for(i in 1:nrow(data_frame)){
-    if(data_frame[i,]$status=="S"){
-      if(is_cell_inf_val_above_threshold(infection_matrix[data_frame[i,]$xloc + data_frame[i,]$yloc],infectivity_threshold)){
-        data_frame[i,]$status = "I"
+  for(i in 1:length(inds)){
+    # only check for uninfected susceptible individuals
+    if(inds[[i]]$status=="S"){
+      # case 1 cell is above some designated threshold where infection is guaranteed
+      # dynamics here may change
+      if(is_cell_inf_val_above_threshold(infection_matrix[inds[[i]]$xloc + inds[[i]]$yloc],
+                                         infectivity_threshold)){
+        inds[[i]]$status <- "I"
       }
+      # case 2 infected and uninfected individual are occupying same cell
+      # automatically make uninfected individual infected
       else{
-        for(j in 1:length(inf_inds)) {
-          if(data_frame[i,]$xloc==inf_inds[[j]][2] & 
-              data_frame[i,]$yloc==inf_inds[[j]][3] &
-              !(data_frame[i,]$id==inf_inds[[j]][1])){
-           data_frame[i,]$status = "I"
+        print(length(inf_ind_indx))
+        for(j in 1:length(inf_ind_indx)) {
+          if((inds[[i]]$xloc==inds[[inf_ind_indx[j]]]$xloc & 
+              inds[[i]]$yloc==inds[[inf_ind_indx[j]]]$yloc) &
+              !(inds[[i]]$id==inf_ind_indx[j])){ # verify these aren't the same
+           inds[[i]]$status <- "I"
           }
         }
       }
     }
   }
-  data_frame
+  inds
 }
 
 #' Helper function
@@ -199,10 +200,11 @@ is_cell_inf_val_above_threshold<-function(cell_value, infectivity_threshold){
 #' @param data_frame holds data about deer
 #' @param inf_matrix holds data about current infectivity levels of landscape
 #' @export
-update_infection_matrix<-function(inf_matrix, data_frame){
-  for(i in 1:nrow(data_frame)){
-    if(data_frame[i,]$status == "I")
-      inf_matrix[data_frame[i,]$xloc, data_frame[i,]$yloc]<-inf_matrix[data_frame[i,]$xloc,data_frame[i,]$yloc] + 1
+update_infection_matrix<-function(inf_matrix, inds){
+  for(i in 1:length(inds)){
+    print(i)
+    if(inds[[i]]$status == "I")
+      inf_matrix[inds[[i]]$xloc,inds[[i]]$yloc]<-inf_matrix[inds[[i]]$xloc,inds[[i]]$yloc] + 1
   }
   max_val<-max(inf_matrix)
   apply(inf_matrix, 2, divide_by_max, max=max_val)
@@ -216,16 +218,15 @@ divide_by_max<-function(x, max){
 #' Updates individual locations
 #' @param data_frame holds data about deer
 #' @export
-move<-function(data_frame, landscape, nrow, ncol, binary){
-  for(i in 1:nrow(data_frame)){
-    d_mat<-make_density_matrix(nrow,ncol,data_frame)
-    nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
+move<-function(inds, landscape, nrow, ncol, binary){
+  for(i in 1:length(inds)){
+    d_mat<-make_density_matrix(nrow,ncol,inds)
+    nbrs<-get_neighbors(c(inds[[i]]$xloc,inds[[i]]$yloc), num_row, num_col)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
     new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary)
-    data_frame[i,]$xloc<-new_loc[[1]]
-    data_frame[i,]$yloc<-new_loc[[2]]
+    inds[[i]]$xloc<-new_loc[[1]]
+    inds[[i]]$yloc<-new_loc[[2]]
   }
-  data_frame
 }
 
 #' Chooses best possible landscape component to move to
@@ -273,21 +274,22 @@ is_habitat <- function(landscape, xloc, yloc){
 #' @param dim dimension of a vector for random assignment of location
 #' @param nI # infected individuals to start
 #' @export
-make_deer <- function(n.initial, dim, nI, binary, landscape){
-  id<-1:n.initial
-  xloc<-round(runif(n.initial, min=1, max=dim))
-  yloc<-round(runif(n.initial, min=1, max=dim))
-  if(binary){
-    while(!is_habitat(landscape, xloc, yloc)){
-      xloc<-round(runif(n.initial, min=1, max=dim))
-      yloc<-round(runif(n.initial, min=1, max=dim))
-    }
-  }
-  # vec<-Cmatrix(yloc,xloc,dim)
-  I<-sample(1:n.initial, nI)
-  status<-rep("S", times=n.initial)
+make_deer <- function(n_initial, dim, nI, binary, landscape){
+  I<-sample(1:n_initial, nI)
+  status<-rep("S", times=n_initial)
+  sex = c("M", "F")
   status[I]<-"I"
-  inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
+  inds <- list()
+  # create desire num of individuals n_initial
+  # id = NA, sex = NA, xloc = NA, yloc = NA, status = NA, past_locs = list()
+  for(iter in 1:n_initial){
+    inds <- append(inds, Deer$new(iter,
+                                  sex = sex[round(runif(1, min=1, max=2))], 
+                                  xloc = round(runif(1, min=1, max=dim)),
+                                  yloc = round(runif(1, min=1, max=dim)),
+                                  status=status[iter]))
+  }
+  #inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
   inds
 }
 
@@ -315,9 +317,9 @@ get_neighbors<-function(loc, nrow, ncol){
 }
 # Main simulation
 # TODO make main simulation loop, using functional? (lapply)
-check_inds_locs<-function(ind, data_frame){
-  for(i in 1:nrow(data_frame)){
-    if(is_same_location(ind, data_frame[i,]) & is_not_same_id(ind, data_frame[i,])){
+check_inds_locs<-function(ind, inds){
+  for(i in 1:length(inds)){
+    if(is_same_location(ind, inds[[i]]) & is_not_same_id(ind, inds[[i]])){
       
     }
   }
@@ -333,18 +335,18 @@ is_not_same_id<-function(ind1, ind2){
   !(ind1$id == ind2$id)
 }
 
-recover_inds<-function(data_frame, gamma){
-  infected<-which(data_frame$status=="I" ) #which individuals are currently infected?
-  if(length(infected>0)){
-    rec.prob<-runif(length(infected), min=0, max=1)
-    for (i in 1:length(infected)){
-      if(rec.prob[i]<= gamma){
-        data_frame$status[infected[i]]<-"R"
-      }
-    }
-  }
-  return(data_frame)
-}
+# recover_inds<-function(data_frame, gamma){
+#   infected<-which(data_frame$status=="I" ) #which individuals are currently infected?
+#   if(length(infected>0)){
+#     rec.prob<-runif(length(infected), min=0, max=1)
+#     for (i in 1:length(infected)){
+#       if(rec.prob[i]<= gamma){
+#         data_frame$status[infected[i]]<-"R"
+#       }
+#     }
+#   }
+#   return(data_frame)
+# }
 
 
 # CONSTANTS
@@ -354,28 +356,13 @@ landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
 landscape
 infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(16,num_row,1,is_binary, landscape)
+#deer
 gamma=0.1 # recovery rate
-for(i in 1:50){
-  print(i)
+for(iter in 1:50){
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
-  deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
-  print(deer)
+  move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
   d_mat<-make_density_matrix(5,5,deer)
-  # add a column with the extreme values (-1,1) to calculate
-  # the colors, then drop the extra column in the result
-
-  # code for movement map
-  # matplot(deer$xloc, deer$yloc, type=,pch=1)
-  # code for "heatmap"
-  # cellcol<-color.scale(cbind(infection_matrix,
-  #                            c(0:1)))
-  # color2D.matplot(infection_matrix,cellcolors=cellcol,
-  #                 main="Landscape Infectivity Heatmap")
-  # # do the legend call separately to get the full range
-  # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
-  #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
   par(mfrow=c(1,2))
   plot(infection_matrix,
             axis.col=NULL,
@@ -389,10 +376,10 @@ for(i in 1:50){
             axis.row=NULL,
             xlab="",
             ylab="")
-  # legend(x = "topright",
-  #        inset=c(-0.45, 0),
-  #        legend=c("forest", "plains", "open water"),
-  #        col="green", "white", "blue")
+
+
+  
+
   Sys.sleep(2)
 }
 
