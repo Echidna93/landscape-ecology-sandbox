@@ -1,7 +1,7 @@
 # library(tidyverse)
 library(plotrix)
 library('plot.matrix')
-
+library(ggplot2)
 
 percep <- 2
 num_row=5
@@ -23,8 +23,10 @@ is_binary = FALSE
 #' @export
 #' @example examples/neutral.landscape_example.R
 fracland_mod <- function(k, h, p, binary = TRUE) {
-  ## Function for creating neutral landscapes Shannon Pittman University of Minnesota May, 2013 k = the extent of the map (2^k+1)^2 pixels h =
-  ## how clumped the map should be (ranging from ?? to ??) -- weird behavior at higher values p = proportion of map in habitat 1 binary =
+  ## Function for creating neutral landscapes Shannon Pittman University of
+  ## Minnesota May, 2013 k = the extent of the map (2^k+1)^2 pixels h =
+  ## how clumped the map should be (ranging from ?? to ??) -- weird behavior
+  ## at higher values p = proportion of map in habitat 1 binary =
   ## plotflag == if TRUE will plot a filled contour version of the matrix
   
   ## function call: testmap=land(6,1,.5,FALSE,TRUE)
@@ -204,8 +206,9 @@ update_infection_matrix<-function(inf_matrix, data_frame){
     if(data_frame[i,]$status == "I")
       inf_matrix[data_frame[i,]$xloc, data_frame[i,]$yloc]<-inf_matrix[data_frame[i,]$xloc,data_frame[i,]$yloc] + 1
   }
-  max_val<-max(inf_matrix)
-  apply(inf_matrix, 2, divide_by_max, max=max_val)
+  inf_matrix
+  # max_val<-max(inf_matrix)
+  # apply(inf_matrix, 2, divide_by_max, max=max_val)
 }
 
 # helper function
@@ -244,7 +247,7 @@ make_decision<-function(landscape, d_mat, nbrs, binary){
         while(!is_habitat(landscape, nbrs[[i]][1], nbrs[[i]][2])){
             #i<-round(runif(1, min=1, max=length(nbrs[1,])))
             i<-i+1
-            print(i)
+            #print(i)
           }
         }
       else{
@@ -265,7 +268,9 @@ make_decision<-function(landscape, d_mat, nbrs, binary){
 #' ensures that deer are only placed on habitat in the binary case
 #' 
 is_habitat <- function(landscape, xloc, yloc){
+  #print((landscape[xloc,][yloc] == 1))
   (landscape[xloc,][yloc] == 1)
+  
 }
 
 #' initiates a data frame of deer
@@ -291,6 +296,23 @@ make_deer <- function(n.initial, dim, nI, binary, landscape){
   inds
 }
 
+
+#' returns the highest value(s) on the infection matrix log normalized
+#' @param infection_matrix
+#' @export
+get_log_max_value <- function(infection_matrix){
+    max(infection_matrix)
+    }
+
+#' 
+#' #' initiates a data frame of deer
+#' #' @param n.initial # deer
+#' #' @param dim dimension of a vector for random assignment of location
+#' #' @param nI # infected individuals to start
+#' #' @export
+#' get_nonzero_landscape_tiles <- function(infection_matrix){
+#'   
+#' }
 #' Helper function
 #' returns neighborhood of cells as a list of vectors
 #' @param loc current coordinates of individual
@@ -347,53 +369,61 @@ recover_inds<-function(data_frame, gamma){
 }
 
 
+
 # CONSTANTS
-# TODO look into making these changeable by a user in an x11() window?
+# TODO look into making these changeable by a user in an x11() window
 
 landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
-landscape
+#landscape
 infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(16,num_row,1,is_binary, landscape)
 gamma=0.1 # recovery rate
+inf_vals=c()
 for(i in 1:50){
-  print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
-  deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
+  inf_vals=append(inf_vals, max(infection_matrix))
+  print(max(infection_matrix))
   deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
-  print(deer)
+  # TODO: need container to hold deer coordinates for each iteration
   d_mat<-make_density_matrix(5,5,deer)
-  # add a column with the extreme values (-1,1) to calculate
-  # the colors, then drop the extra column in the result
+# add a column with the extreme values (-1,1) to calculate
+# the colors, then drop the extra column in the result
+# 
+#   code for movement map
+#   matplot(deer$xloc, deer$yloc, type=,pch=1)
+#   code for "heatmap"
+#   cellcol<-color.scale(cbind(infection_matrix,
+#                              c(0:1)))
+#   color2D.matplot(infection_matrix,cellcolors=cellcol,
+#                   main="Landscape Infectivity Heatmap")
+#   # do the legend call separately to get the full range
+#   color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
+#                rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
 
-  # code for movement map
-  # matplot(deer$xloc, deer$yloc, type=,pch=1)
-  # code for "heatmap"
-  # cellcol<-color.scale(cbind(infection_matrix,
-  #                            c(0:1)))
-  # color2D.matplot(infection_matrix,cellcolors=cellcol,
-  #                 main="Landscape Infectivity Heatmap")
-  # # do the legend call separately to get the full range
-  # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
-  #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
-  par(mfrow=c(1,2))
-  plot(infection_matrix,
-            axis.col=NULL,
-            axis.row=NULL,
-            xlab="",
-            ylab=""
-       )
+  par(mfrow=c(2,2))
+  # plot(infection_matrix,
+  #           axis.col=NULL,
+  #           axis.row=NULL,
+  #           xlab="",
+  #           ylab=""
+  #      )
+  m<-matrix(inf_vals, length(inf_vals))
+  print(m)
+  plot(inf_vals)
   plot(landscape,
-            col=c("green", "white"),
+            col=c("white", "green"),
             axis.col=NULL,
             axis.row=NULL,
             xlab="",
             ylab="")
-  # legend(x = "topright",
-  #        inset=c(-0.45, 0),
-  #        legend=c("forest", "plains", "open water"),
-  #        col="green", "white", "blue")
+  ggplot() + 
+    geom_point(aes(x = x_loc, y = y_loc)) +
+    geom_path(aes(x = x_loc, y = y_loc, col = my_colors, size = my_colors, group = my_group), 
+              alpha = 1) + 
+    scale_color_manual(values = c("black", "red")) +
+    scale_size_manual(values = c(1.5, 0.45))
+
   Sys.sleep(2)
 }
-
 color.scale
