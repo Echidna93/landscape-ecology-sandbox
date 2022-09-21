@@ -1,7 +1,7 @@
 # library(tidyverse)
 library(plotrix)
 library('plot.matrix')
-
+source("deer.R")
 
 percep <- 2
 num_row=5
@@ -143,8 +143,11 @@ make_infection_matrix<-function(k){
 get_infected_deer<-function(inds){
   infected_inds<-rep()
   for(i in 1:length(inds)){
+    print(inds[[i]]$status)
     if(inds[[i]]$status == "I"){
+      print('here')
       infected_inds<-append(infected_inds, i)
+      print(infected_inds)
     }
   }
   infected_inds
@@ -172,8 +175,8 @@ update_infection_statuses<-function(inds, infection_matrix, infectivity_threshol
       # case 2 infected and uninfected individual are occupying same cell
       # automatically make uninfected individual infected
       else{
-        print(length(inf_ind_indx))
         for(j in 1:length(inf_ind_indx)) {
+          print(inf_ind_indx[j])
           if((inds[[i]]$xloc==inds[[inf_ind_indx[j]]]$xloc & 
               inds[[i]]$yloc==inds[[inf_ind_indx[j]]]$yloc) &
               !(inds[[i]]$id==inf_ind_indx[j])){ # verify these aren't the same
@@ -202,7 +205,6 @@ is_cell_inf_val_above_threshold<-function(cell_value, infectivity_threshold){
 #' @export
 update_infection_matrix<-function(inf_matrix, inds){
   for(i in 1:length(inds)){
-    print(i)
     if(inds[[i]]$status == "I")
       inf_matrix[inds[[i]]$xloc,inds[[i]]$yloc]<-inf_matrix[inds[[i]]$xloc,inds[[i]]$yloc] + 1
   }
@@ -217,13 +219,15 @@ divide_by_max<-function(x, max){
 }
 #' Updates individual locations
 #' @param data_frame holds data about deer
+#' @param sim_iter simulation iterator, current time step in
 #' @export
-move<-function(inds, landscape, nrow, ncol, binary){
+move<-function(inds, landscape, nrow, ncol, binary, sim_iter){
   for(i in 1:length(inds)){
     d_mat<-make_density_matrix(nrow,ncol,inds)
     nbrs<-get_neighbors(c(inds[[i]]$xloc,inds[[i]]$yloc), num_row, num_col)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
     new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary)
+    inds[[i]]$push_location(sim_iter)
     inds[[i]]$xloc<-new_loc[[1]]
     inds[[i]]$yloc<-new_loc[[2]]
   }
@@ -279,15 +283,16 @@ make_deer <- function(n_initial, dim, nI, binary, landscape){
   status<-rep("S", times=n_initial)
   sex = c("M", "F")
   status[I]<-"I"
+  print(status)
   inds <- list()
   # create desire num of individuals n_initial
   # id = NA, sex = NA, xloc = NA, yloc = NA, status = NA, past_locs = list()
-  for(iter in 1:n_initial){
-    inds <- append(inds, Deer$new(iter,
+  for(i in 1:n_initial){
+    inds <- append(inds, Deer$new(i,
                                   sex = sex[round(runif(1, min=1, max=2))], 
                                   xloc = round(runif(1, min=1, max=dim)),
                                   yloc = round(runif(1, min=1, max=dim)),
-                                  status=status[iter]))
+                                  status=status[i]))
   }
   #inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
   inds
@@ -356,13 +361,14 @@ landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
 landscape
 infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(16,num_row,1,is_binary, landscape)
-#deer
+deer
 gamma=0.1 # recovery rate
 for(iter in 1:50){
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
-  move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
+  move(deer, landscape, nrow(landscape), ncol(landscape), is_binary, iter)
   d_mat<-make_density_matrix(5,5,deer)
+  print(deer[[1]]$past_locs)
   par(mfrow=c(1,2))
   plot(infection_matrix,
             axis.col=NULL,
@@ -376,10 +382,6 @@ for(iter in 1:50){
             axis.row=NULL,
             xlab="",
             ylab="")
-
-
-  
-
   Sys.sleep(2)
 }
 

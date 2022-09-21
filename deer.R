@@ -14,6 +14,9 @@ Deer <- R6Class("Deer", public = list(
     self$yloc <- yloc
     self$status <- status
     self$past_locs <- past_locs
+  }, 
+  push_location = function(index){
+    self$past_locs[[index]]<- cbind(self$xloc, self$yloc)
   })
 )
 # 
