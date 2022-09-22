@@ -234,10 +234,10 @@ move<-function(inds, landscape, nrow, ncol, binary, sim_iter){
 }
 
 #' Chooses best possible landscape component to move to
-#' TODO alter in the case of an make_decision being fed an empty list, make 
+#' TODO alter in the case of an make_decision being fed an empty list, make
 #' else case
 #' TODO implement sorting function
-#' @param 
+#' @param
 #' @export
 make_decision<-function(landscape, d_mat, nbrs, binary){
   # assign decision to be the first element by default--make comparison
@@ -368,7 +368,7 @@ for(iter in 1:50){
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   move(deer, landscape, nrow(landscape), ncol(landscape), is_binary, iter)
   d_mat<-make_density_matrix(5,5,deer)
-  print(deer[[1]]$past_locs)
+  # print(deer[[1]]$past_locs)
   par(mfrow=c(1,2))
   plot(infection_matrix,
             axis.col=NULL,
