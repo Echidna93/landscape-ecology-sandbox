@@ -352,7 +352,8 @@ recover_inds<-function(data_frame, gamma){
 landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
 landscape
 infection_matrix<-make_infection_matrix(5)
-deer<-make_deer(16,nrow(landscape),1,is_binary, landscape)
+deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
+write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
 for(i in 1:50){
   print(i)
@@ -362,6 +363,9 @@ for(i in 1:50){
   deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
   print(deer)
   d_mat<-make_density_matrix(nrow(landscape), ncol(landscape),deer)
+  write.table(deer,  "C:\\Users\\jackx\\Desktop\\deerdat.csv",
+              row.names=FALSE, sep=",", append=TRUE, col.names=FALSE,
+              )
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
 
@@ -382,20 +386,34 @@ for(i in 1:50){
   #           xlab="",
   #           ylab=""
   #      )
-  ggplot() + 
-    geom_path(data = deer, aes(x = deer$xloc, y = deer$yloc, color = deer$id), 
-              size = 1, lineend = "round")
-  plot(landscape,
-            col=c("green", "white"),
-            axis.col=NULL,
-            axis.row=NULL,
-            xlab="",
-            ylab="")
+  # ggplot() + 
+  #   geom_path(data = deer, aes(x = deer$xloc, y = deer$yloc, color = deer$id), 
+  #             size = 1, lineend = "round")
+  # plot(landscape,
+  #           col=c("green", "white"),
+  #           axis.col=NULL,
+  #           axis.row=NULL,
+  #           xlab="",
+  #           ylab="")
   # legend(x = "topright",
   #        inset=c(-0.45, 0),
   #        legend=c("forest", "plains", "open water"),
   #        col="green", "white", "blue")
-  Sys.sleep(2)
+  # Sys.sleep(2)
 }
 
+d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
+d
+
+# par(mfrow=c(1,2))
+# landscape.df<-reshape2::melt()
+# ggplot(landscape,
+#           col=c("green", "white"),
+#           axis.col=NULL,
+#           axis.row=NULL,
+#           xlab="",
+#           ylab="")
+ggplot() + 
+  geom_path(data = d, aes(x = d$xloc, y = d$yloc, color = d$id), 
+            size = 1, lineend = "round")
 color.scale
