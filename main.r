@@ -1,12 +1,11 @@
 # library(tidyverse)
 library(plotrix)
 library('plot.matrix')
-
+library(ggplot2)
 
 percep <- 2
-num_row=5
 infectivity_threshold=2
-num_col<-5
+
 is_binary = FALSE
 
 
@@ -219,7 +218,7 @@ divide_by_max<-function(x, max){
 move<-function(data_frame, landscape, nrow, ncol, binary){
   for(i in 1:nrow(data_frame)){
     d_mat<-make_density_matrix(nrow,ncol,data_frame)
-    nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), num_row, num_col)
+    nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), nrow, ncol)
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
     new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary)
     data_frame[i,]$xloc<-new_loc[[1]]
@@ -269,23 +268,23 @@ is_habitat <- function(landscape, xloc, yloc){
 }
 
 #' initiates a data frame of deer
-#' @param n.initial # deer
+#' @param n_initial # deer
 #' @param dim dimension of a vector for random assignment of location
 #' @param nI # infected individuals to start
 #' @export
-make_deer <- function(n.initial, dim, nI, binary, landscape){
-  id<-1:n.initial
-  xloc<-round(runif(n.initial, min=1, max=dim))
-  yloc<-round(runif(n.initial, min=1, max=dim))
+make_deer <- function(n_initial, dim, nI, binary, landscape){
+  id<-1:n_initial
+  xloc<-round(runif(n_initial, min=1, max=dim))
+  yloc<-round(runif(n_initial, min=1, max=dim))
   if(binary){
     while(!is_habitat(landscape, xloc, yloc)){
-      xloc<-round(runif(n.initial, min=1, max=dim))
-      yloc<-round(runif(n.initial, min=1, max=dim))
+      xloc<-round(runif(n_initial, min=1, max=dim))
+      yloc<-round(runif(n_initial, min=1, max=dim))
     }
   }
   # vec<-Cmatrix(yloc,xloc,dim)
-  I<-sample(1:n.initial, nI)
-  status<-rep("S", times=n.initial)
+  I<-sample(1:n_initial, nI)
+  status<-rep("S", times=n_initial)
   status[I]<-"I"
   inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
   inds
@@ -353,16 +352,16 @@ recover_inds<-function(data_frame, gamma){
 landscape <-fracland_mod(k=5,h=0.5,p=0.5,binary=is_binary)
 landscape
 infection_matrix<-make_infection_matrix(5)
-deer<-make_deer(16,num_row,1,is_binary, landscape)
+deer<-make_deer(16,nrow(landscape),1,is_binary, landscape)
 gamma=0.1 # recovery rate
 for(i in 1:50){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
-  deer<-recover_inds(deer,gamma)
+  # deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
   print(deer)
-  d_mat<-make_density_matrix(5,5,deer)
+  d_mat<-make_density_matrix(nrow(landscape), ncol(landscape),deer)
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
 
@@ -377,12 +376,15 @@ for(i in 1:50){
   # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
   #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
   par(mfrow=c(1,2))
-  plot(infection_matrix,
-            axis.col=NULL,
-            axis.row=NULL,
-            xlab="",
-            ylab=""
-       )
+  # plot(infection_matrix,
+  #           axis.col=NULL,
+  #           axis.row=NULL,
+  #           xlab="",
+  #           ylab=""
+  #      )
+  ggplot() + 
+    geom_path(data = deer, aes(x = deer$xloc, y = deer$yloc, color = deer$id), 
+              size = 1, lineend = "round")
   plot(landscape,
             col=c("green", "white"),
             axis.col=NULL,
