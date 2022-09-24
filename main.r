@@ -2,8 +2,8 @@
 library(plotrix)
 library('plot.matrix')
 library(ggplot2)
-
-percep <- 2
+library(patchwork)
+percep <- 1
 infectivity_threshold=2
 
 is_binary = FALSE
@@ -401,19 +401,22 @@ for(i in 1:50){
   #        col="green", "white", "blue")
   # Sys.sleep(2)
 }
-
 d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
-d
+landscape.df<-reshape2::melt(landscape,
+                             c("x", "y"), value.name="z")
 
-# par(mfrow=c(1,2))
+#par(mfrow=c(1,2))
 # landscape.df<-reshape2::melt()
-# ggplot(landscape,
-#           col=c("green", "white"),
-#           axis.col=NULL,
-#           axis.row=NULL,
-#           xlab="",
-#           ylab="")
-ggplot() + 
-  geom_path(data = d, aes(x = d$xloc, y = d$yloc, color = d$id), 
-            size = 1, lineend = "round")
+land<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z))+
+  geom_tile() + 
+  scale_color_gradientn(colours=terrain.colors(10))
+
+# color_group<-c("blue", "black", "green", "red", "pink")
+movement<-ggplot() +
+  geom_path(data = d, aes(x = d$xloc, y = d$yloc, color = d$id),
+            size = 1, lineend = "round") + 
+  scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
+# +
+#   scale_color_manual(values=c("1"="red", "2"="green", "3"="blue", "4"="pink", "5"="black"))
+land + movement
 color.scale
