@@ -3,9 +3,9 @@ library(plotrix)
 library('plot.matrix')
 library(ggplot2)
 library(patchwork)
+library(gganimate)
 percep <- 1
 infectivity_threshold=2
-
 is_binary = FALSE
 
 
@@ -166,6 +166,9 @@ update_infection_statuses<-function(data_frame, infection_matrix, infectivity_th
   inf_inds<-get_infected_deer(data_frame)
   # TODO break this off into it's own function, maybe is_same_location
   for(i in 1:nrow(data_frame)){
+    # increment time step; used for animation (if desired)
+    # TODO investigate breaking this off into it's own helper function
+    data_frame[i,]$time_step = data_frame[i,]$time_step + 1
     if(data_frame[i,]$status=="S"){
       if(is_cell_inf_val_above_threshold(infection_matrix[data_frame[i,]$xloc + data_frame[i,]$yloc],infectivity_threshold)){
         data_frame[i,]$status = "I"
@@ -286,7 +289,12 @@ make_deer <- function(n_initial, dim, nI, binary, landscape){
   I<-sample(1:n_initial, nI)
   status<-rep("S", times=n_initial)
   status[I]<-"I"
-  inds <- data.frame(id = id, xloc=xloc, yloc=yloc, status=status, stringsAsFactors=FALSE) 
+  inds <- data.frame(id = id,
+                     xloc=xloc,
+                     yloc=yloc,
+                     status=status,
+                     time_step = 1,
+                     stringsAsFactors=FALSE) 
   inds
 }
 
@@ -412,11 +420,20 @@ land<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z))+
   scale_color_gradientn(colours=terrain.colors(10))
 
 # color_group<-c("blue", "black", "green", "red", "pink")
-movement<-ggplot() +
-  geom_path(data = d, aes(x = d$xloc, y = d$yloc, color = d$id),
+movement<-ggplot(landscape.df) +
+  geom_path(data = d, aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
             size = 1, lineend = "round") + 
+  geom_point(data=d,  aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
+              alpha = 0.7, shape=21, size = 2) +
+  transition_time(d$time_step) +
   scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
 # +
 #   scale_color_manual(values=c("1"="red", "2"="green", "3"="blue", "4"="pink", "5"="black"))
-land + movement
+animated_movement <-  movement + 
+  transition_reveal(along=d$time_step)
+
+animate(animated_movement, nframes = 100, fps = 10)
+
+# un-animated
+# land + movement
 color.scale
