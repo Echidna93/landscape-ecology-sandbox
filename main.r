@@ -355,7 +355,7 @@ infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
 write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
-for(i in 1:50){
+for(i in 1:100){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   # deer<-recover_inds(deer,gamma)
