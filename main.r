@@ -4,7 +4,7 @@ library('plot.matrix')
 library(ggplot2)
 library(patchwork)
 library(gganimate)
-percep <- 1
+percep <- 2
 infectivity_threshold=2
 is_binary = FALSE
 
@@ -363,7 +363,7 @@ infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
 write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
-for(i in 1:100){
+for(i in 1:200){
   print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   # deer<-recover_inds(deer,gamma)
@@ -374,6 +374,13 @@ for(i in 1:100){
   write.table(deer,  "C:\\Users\\jackx\\Desktop\\deerdat.csv",
               row.names=FALSE, sep=",", append=TRUE, col.names=FALSE,
               )
+  
+  
+  
+  
+  
+  
+  
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
 
@@ -409,31 +416,38 @@ for(i in 1:100){
   #        col="green", "white", "blue")
   # Sys.sleep(2)
 }
-d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
+
+
+
 landscape.df<-reshape2::melt(landscape,
                              c("x", "y"), value.name="z")
-
 #par(mfrow=c(1,2))
 # landscape.df<-reshape2::melt()
 land<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z))+
   geom_tile() + 
   scale_color_gradientn(colours=terrain.colors(10))
 
-# color_group<-c("blue", "black", "green", "red", "pink")
-movement<-ggplot(landscape.df) +
-  geom_path(data = d, aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
-            size = 1, lineend = "round") + 
+d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
+movement<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z)) +
+  geom_tile() +
+  geom_path(data = d,
+            aes(x = d$xloc, y = d$yloc,
+                group=d$id,
+                color = d$id),
+            size = 1,
+            lineend = "round") + 
   geom_point(data=d,  aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
               alpha = 0.7, shape=21, size = 2) +
   transition_time(d$time_step) +
   scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
 # +
 #   scale_color_manual(values=c("1"="red", "2"="green", "3"="blue", "4"="pink", "5"="black"))
-animated_movement <-  movement + 
-  transition_reveal(along=d$time_step)
-
-animate(animated_movement, nframes = 100, fps = 10)
+anim <-  movement + 
+  transition_reveal(along=d$time_step) + 
+  ggtitle("Individuals at time step {frame_along}")
+# animate(anim, nframes = 200, fps = 10)
 
 # un-animated
 # land + movement
+
 color.scale
