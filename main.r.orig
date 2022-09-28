@@ -370,7 +370,12 @@ infection_matrix<-make_infection_matrix(5)
 deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
 write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
+<<<<<<< HEAD
 for(i in 1:100){
+=======
+for(i in 1:200){
+  print(i)
+>>>>>>> refactor-visuals-more-digestible
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   # deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
@@ -434,7 +439,8 @@ land<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z))+
   scale_color_gradientn(colours=terrain.colors(10))
 
 d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
-movement<-ggplot() +
+movement<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z)) +
+  geom_tile() +
   geom_path(data = d,
             aes(x = d$xloc, y = d$yloc,
                 group=d$id,
@@ -450,7 +456,7 @@ movement<-ggplot() +
 anim <-  movement + 
   transition_reveal(along=d$time_step) + 
   ggtitle("Individuals at time step {frame_along}")
-animate(anim, nframes = 200, fps = 10)
+# animate(anim, nframes = 200, fps = 10)
 
 # un-animated
 # land + movement
