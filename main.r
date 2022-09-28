@@ -18,7 +18,7 @@ is_binary = FALSE
 #' @param h numeric. Level of aggregation in the map.
 #' @param p numeric (0,1). The proportion of map in habitat=1
 #' @param binary logical. If TRUE, a 0/1 categorical landscape is produced.
-#' @author Shannon Pittman, James Forester, modified by Lauren White
+#' @author Shannon Pittman, James Forester, modified by Lauren White, modified by Alex Jack
 #' @export
 #' @example examples/neutral.landscape_example.R
 fracland_mod <- function(k, h, p, binary = TRUE) {
@@ -37,42 +37,40 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
   B[A, 1] <- 0
   B[A, A] <- 0
   
-  
   iter <- 1
   for (iter in 1:k) {
     scalef <- (0.5 + (1 - h)/2)^(iter)
-    
     d <- 2^(k - iter)
-    
     # ALL SQUARE STEPS#
     for (i in seq(d + 1, A - d, 2 * d)) {
       for (j in seq(d + 1, A - d, 2 * d)) {
-        B[i, j] <- mean(c(B[i - d, j - d], B[i - d, j + d], B[i + d, j - d], B[i + d, j + d])) + scalef * rnorm(n = 1)
+        B[i, j] <- abs(mean(c(B[i - d, j - d], B[i - d, j + d], B[i + d, j - d], B[i + d, j + d])) + scalef * rnorm(n = 1))
       }
     }
-    
+    # print(B)
     # OUTSIDE DIAMOND STEP#
     for (j in seq(d + 1, A - d, 2 * d)) {
-      B[1, j] <- mean(c(B[1, j - d], B[1, j + d], B[1 + d, j])) + scalef * rnorm(n = 1)
-      B[A, j] <- mean(c(B[A, j - d], B[A, j + d], B[A - d, j])) + scalef * rnorm(n = 1)
+      B[1, j] <- abs(mean(c(B[1, j - d], B[1, j + d], B[1 + d, j])) + scalef * rnorm(n = 1))
+      B[A, j] <- abs(mean(c(B[A, j - d], B[A, j + d], B[A - d, j])) + scalef * rnorm(n = 1))
     }
     
     for (i in seq(d + 1, A - d, 2 * d)) {
-      B[i, 1] <- mean(c(B[i - d, 1], B[i + d, 1], B[i, 1 + d])) + scalef * rnorm(n = 1)
-      B[i, A] <- mean(c(B[i - d, A], B[i + d, A], B[i, A - d])) + scalef * rnorm(n = 1)
+      B[i, 1] <- abs(mean(c(B[i - d, 1], B[i + d, 1], B[i, 1 + d]))) + scalef * rnorm(n = 1)
+      B[i, A] <- abs(mean(c(B[i - d, A], B[i + d, A], B[i, A - d])) + scalef * rnorm(n = 1))
     }
     
     # INSIDE DIAMOND STEP#
     if (2 * d + 1 <= A - 2 * d) {
       for (i in seq(d + 1, A - d, 2 * d)) {
         for (j in seq(2 * d + 1, A - 2 * d, 2 * d)) {
-          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1)
+          B[i, j] <- abs(mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1))
         }
       }
       
       for (i in seq(2 * d + 1, A - 2 * d, 2 * d)) {
         for (j in seq(d + 1, A - d, 2 * d)) {
-          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1)
+          B[i, j] <- abs(mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1))
+          #print(B[i,j])
         }
       }
     }
@@ -91,7 +89,6 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
   } 
   return(B)
 }
-
 
 
 #' initiates a landscape matrix of vectors of random 0's and 1's
