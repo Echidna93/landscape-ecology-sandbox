@@ -87,7 +87,7 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
     B[T1] <- 1  #habitat is 1
     B[T2] <- 0
   } 
-  return(B)
+  return(abs(B))
 }
 
 
@@ -232,9 +232,7 @@ move<-function(data_frame, landscape, nrow, ncol, binary){
 #' @export
 make_decision<-function(landscape, d_mat, nbrs, binary){
   # assign decision to be the first element by default--make comparison
-  decision_vec<-c(nbrs[[1]][1],nbrs[[1]][2])
-  decision_val<-landscape[nbrs[[1]][1],][nbrs[[1]][2]] - d_mat[nbrs[[1]][1],][nbrs[[1]][2]]
-  # recalculate value of landscape matrix to account for conspecific dens.
+      decision_vec <- c()
       if(binary){
         i<-1
         while(!is_habitat(landscape, nbrs[[i]][1], nbrs[[i]][2])){
@@ -244,15 +242,27 @@ make_decision<-function(landscape, d_mat, nbrs, binary){
           }
         }
       else{
-        for(j in 1:length(nbrs)){
-          crnt_adjstd_val <- (landscape[nbrs[[j]][1],][nbrs[[j]][2]] - d_mat[nbrs[[j]][1],][nbrs[[j]][2]])
-          if(crnt_adjstd_val > decision_val){
-            # want decision to take into account conspecific density
-            # want list of values from the landscape matrix
-            decision_vec<-c(nbrs[[j]][1], nbrs[[j]][2])
-          }
+        #empty list to hold values of neighbors
+        weights<-c()
+        for(i in 1:length(nbrs)){
+          # append value of neighbor to weight vector
+          weights[i]<-landscape[nbrs[[i]][1],][nbrs[[i]][2]]
         }
-      }
+        # print(weights)
+        # weighted sample is a vector of the indices of nbrs weighted by
+        # their corresponding values in the landscape matrix
+        weighted_sample<-sample(c(1:length(nbrs)), size=100, replace=TRUE, prob=weights)
+        print(weighted_sample)
+        # print(weighted_sample)
+        # now we want to randomly sample from this list to get the index
+        decision_val <- sample(weighted_sample, 1)
+        
+        print("DECISION VALUE")
+        print(decision_val)
+        
+        print(nbrs)
+        decision_vec <- c(nbrs[[decision_val]][1], nbrs[[decision_val]][2])
+        }
   decision_vec
 }
 
@@ -353,12 +363,11 @@ deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
 write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
 for(i in 1:100){
-  print(i)
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   # deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
   deer<-move(deer, landscape, nrow(landscape), ncol(landscape), is_binary)
-  print(deer)
+
   d_mat<-make_density_matrix(nrow(landscape), ncol(landscape),deer)
   write.table(deer,  "C:\\Users\\jackx\\Desktop\\deerdat.csv",
               row.names=FALSE, sep=",", append=TRUE, col.names=FALSE,
