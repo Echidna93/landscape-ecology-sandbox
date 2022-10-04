@@ -212,6 +212,12 @@ update_infection_matrix<-function(inf_matrix, data_frame){
 divide_by_max<-function(x, max){
   x / max
 }
+
+#' Helper function
+#' @export
+get_inverse<-function(x){
+  1/x}
+
 #' Updates individual locations
 #' @param data_frame holds data about deer
 #' @export
@@ -219,8 +225,9 @@ move<-function(data_frame, landscape, nrow, ncol, binary){
   for(i in 1:nrow(data_frame)){
     d_mat<-make_density_matrix(nrow,ncol,data_frame)
     nbrs<-get_neighbors(c(data_frame[i,]$xloc,data_frame[i,]$yloc), nrow, ncol)
+    distance_vector<-unlist(lapply(get_distance_vector(c(data_frame[i,]$xloc,data_frame[i,]$yloc), nbrs), get_inverse))
     # new_loc<-nbrs[[round(runif(1,1,length(nbrs)))]]
-    new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary)
+    new_loc<-make_decision(landscape=landscape, d_mat=d_mat, nbrs=nbrs, binary, distance_vector)
     data_frame[i,]$xloc<-new_loc[[1]]
     data_frame[i,]$yloc<-new_loc[[2]]
   }
@@ -233,7 +240,7 @@ move<-function(data_frame, landscape, nrow, ncol, binary){
 #' TODO implement sorting function
 #' @param 
 #' @export
-make_decision<-function(landscape, d_mat, nbrs, binary){
+make_decision<-function(landscape, d_mat, nbrs, binary, distance_vector){
   # assign decision to be the first element by default--make comparison
       decision_vec <- c()
       if(binary){
@@ -241,17 +248,17 @@ make_decision<-function(landscape, d_mat, nbrs, binary){
         while(!is_habitat(landscape, nbrs[[i]][1], nbrs[[i]][2])){
             #i<-round(runif(1, min=1, max=length(nbrs[1,])))
             i<-i+1
-            print(i)
           }
         }
       else{
         #empty list to hold values of neighbors
         weights<-c()
+        landscape_values<-c()
         for(i in 1:length(nbrs)){
           # append value of neighbor to weight vector
-          weights[i]<-landscape[nbrs[[i]][1],][nbrs[[i]][2]]
+          landscape_values[i]<-landscape[nbrs[[i]][1],][nbrs[[i]][2]]
         }
-        # print(weights)
+        weights <- landscape_values * distance_vector
         # weighted sample is a vector of the indices of nbrs weighted by
         # their corresponding values in the landscape matrix
         weighted_sample<-sample(c(1:length(nbrs)), size=100, replace=TRUE, prob=weights)
@@ -259,11 +266,6 @@ make_decision<-function(landscape, d_mat, nbrs, binary){
         # print(weighted_sample)
         # now we want to randomly sample from this list to get the index
         decision_val <- sample(weighted_sample, 1)
-        
-        print("DECISION VALUE")
-        print(decision_val)
-        
-        print(nbrs)
         decision_vec <- c(nbrs[[decision_val]][1], nbrs[[decision_val]][2])
         }
   decision_vec
@@ -337,6 +339,23 @@ check_inds_locs<-function(ind, data_frame){
   }
 }
 
+get_distance_vector<-function(current_location, neighbors){
+  distance_vector<-c()
+  for(i in 1:length(neighbors)){
+    current_neighbor<-c(neighbors[[i]][1],neighbors[[i]][2])
+    distance<-dist(rbind(current_location, current_neighbor))
+    # check if we're comparing against the current cell that the individual
+    # is occupying
+    if(distance==0){
+      distance_vector[i]<-1
+    }
+    else{
+    distance_vector[i]<-distance
+    }
+  }
+  distance_vector
+}
+
 #helper function is location the same
 is_same_location<-function(ind1, ind2){
   (ind1$xloc == ind1$yloc) & (ind1$yloc == ind2$yloc)
@@ -380,12 +399,6 @@ for(i in 1:100){
   write.table(deer,  "C:\\Users\\jackx\\Desktop\\deerdat.csv",
               row.names=FALSE, sep=",", append=TRUE, col.names=FALSE,
               )
-  
-  
-  
-  
-  
-  
   
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
