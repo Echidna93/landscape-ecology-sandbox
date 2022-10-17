@@ -9,7 +9,6 @@ infectivity_threshold=2
 is_binary = FALSE
 
 
-
 #' Create neutral landscape maps
 #' 
 #' Use standard methods to generate fractal maps. Binary and continuous surfaces may be produced.
@@ -44,32 +43,32 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
     # ALL SQUARE STEPS#
     for (i in seq(d + 1, A - d, 2 * d)) {
       for (j in seq(d + 1, A - d, 2 * d)) {
-        B[i, j] <- abs(mean(c(B[i - d, j - d], B[i - d, j + d], B[i + d, j - d], B[i + d, j + d])) + scalef * rnorm(n = 1))
+        B[i, j] <- mean(c(B[i - d, j - d], B[i - d, j + d], B[i + d, j - d], B[i + d, j + d])) + scalef * rnorm(n=1)
       }
     }
     # print(B)
     # OUTSIDE DIAMOND STEP#
     for (j in seq(d + 1, A - d, 2 * d)) {
-      B[1, j] <- abs(mean(c(B[1, j - d], B[1, j + d], B[1 + d, j])) + scalef * rnorm(n = 1))
-      B[A, j] <- abs(mean(c(B[A, j - d], B[A, j + d], B[A - d, j])) + scalef * rnorm(n = 1))
+      B[1, j] <- mean(c(B[1, j - d], B[1, j + d], B[1 + d, j])) + scalef * rnorm(n=1)
+      B[A, j] <- mean(c(B[A, j - d], B[A, j + d], B[A - d, j])) + scalef * rnorm(n=1)
     }
     
     for (i in seq(d + 1, A - d, 2 * d)) {
-      B[i, 1] <- abs(mean(c(B[i - d, 1], B[i + d, 1], B[i, 1 + d]))) + scalef * rnorm(n = 1)
-      B[i, A] <- abs(mean(c(B[i - d, A], B[i + d, A], B[i, A - d])) + scalef * rnorm(n = 1))
+      B[i, 1] <- mean(c(B[i - d, 1], B[i + d, 1], B[i, 1 + d])) + scalef * rnorm(n=1)
+      B[i, A] <- mean(c(B[i - d, A], B[i + d, A], B[i, A - d])) + scalef * rnorm(n=1)
     }
     
     # INSIDE DIAMOND STEP#
     if (2 * d + 1 <= A - 2 * d) {
       for (i in seq(d + 1, A - d, 2 * d)) {
         for (j in seq(2 * d + 1, A - 2 * d, 2 * d)) {
-          B[i, j] <- abs(mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1))
+          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * runif(1,0,2)
         }
       }
       
       for (i in seq(2 * d + 1, A - 2 * d, 2 * d)) {
         for (j in seq(d + 1, A - d, 2 * d)) {
-          B[i, j] <- abs(mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * rnorm(n = 1))
+          B[i, j] <- mean(c(B[i - d, j], B[i + d, j], B[i, j - d], B[i, j + d])) + scalef * runif(1,0,2)
           #print(B[i,j])
         }
       }
@@ -89,7 +88,6 @@ fracland_mod <- function(k, h, p, binary = TRUE) {
   } 
   return(abs(B))
 }
-
 
 #' initiates a landscape matrix of vectors of random 0's and 1's
 #' @param nrow number of rows in matrix
@@ -216,7 +214,8 @@ divide_by_max<-function(x, max){
 #' Helper function
 #' @export
 get_inverse<-function(x){
-  1/x}
+  1/x
+  }
 
 #' Updates individual locations
 #' @param data_frame holds data about deer
@@ -390,6 +389,10 @@ deer<-make_deer(5,nrow(landscape),1,is_binary, landscape)
 write.csv(deer, "C:\\Users\\jackx\\Desktop\\deerdat.csv", row.names=FALSE)
 gamma=0.1 # recovery rate
 for(i in 1:100){
+  
+  
+  # Function calls
+
   deer<-update_infection_statuses(deer, infection_matrix, infectivity_threshold)
   # deer<-recover_inds(deer,gamma)
   infection_matrix<-update_infection_matrix(infection_matrix, deer)
@@ -399,6 +402,10 @@ for(i in 1:100){
   write.table(deer,  "C:\\Users\\jackx\\Desktop\\deerdat.csv",
               row.names=FALSE, sep=",", append=TRUE, col.names=FALSE,
               )
+
+
+
+
   
   # add a column with the extreme values (-1,1) to calculate
   # the colors, then drop the extra column in the result
@@ -413,7 +420,9 @@ for(i in 1:100){
   # # do the legend call separately to get the full range
   # color.legend(0,-4,10,-3,legend=c(0,1,2,3,4,5,6,7,8,9,10),
   #              rect.col=color.scale(c(0:8),c(0,1),0,c(1,0)),align="rb")
-  par(mfrow=c(1,2))
+  
+  # par(mfrow=c(1,3))
+  
   # plot(infection_matrix,
   #           axis.col=NULL,
   #           axis.row=NULL,
@@ -440,32 +449,60 @@ for(i in 1:100){
 
 landscape.df<-reshape2::melt(landscape,
                              c("x", "y"), value.name="z")
-#par(mfrow=c(1,2))
+
 # landscape.df<-reshape2::melt()
 land<-ggplot(data=landscape.df, aes(x=x, y=y, fill=z))+
   geom_tile() + 
   scale_color_gradientn(colours=terrain.colors(10))
 
 d<-read.csv("C:\\Users\\jackx\\Desktop\\deerdat.csv")
+# movement<-ggplot() +
+#   geom_path(data = d,
+#             aes(x = d$xloc, y = d$yloc,
+#                 group=d$id,
+#                 color = d$id),
+#             size = 1,
+#             lineend = "round") +
+#   geom_point(data=d,  aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
+#               alpha = 0.7, shape=21, size = 2) +
+#   transition_time(d$time_step) +
+#   scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
+# 
+
 movement<-ggplot() +
   geom_path(data = d,
             aes(x = d$xloc, y = d$yloc,
                 group=d$id,
                 color = d$id),
             size = 1,
-            lineend = "round") + 
-  geom_point(data=d,  aes(x = d$xloc, y = d$yloc, group=d$id, color = d$id),
-              alpha = 0.7, shape=21, size = 2) +
-  transition_time(d$time_step) +
+            lineend = "round")+
   scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
-# +
-#   scale_color_manual(values=c("1"="red", "2"="green", "3"="blue", "4"="pink", "5"="black"))
-anim <-  movement + 
-  transition_reveal(along=d$time_step) + 
-  ggtitle("Individuals at time step {frame_along}")
-animate(anim, nframes = 200, fps = 10)
+
+
+# density_plot<-ggplot(d, aes(x=xloc))+
+# geom_density(aes(group=d$id, fill=d$id), alpha=0.5)+
+# scale_color_gradientn(colors=rainbow(5), breaks=c(1,2,3,4,5))
+
+density_plot<-ggplot(d, aes(x=d$xloc, y=d$yloc))+
+  stat_density2d(aes(fill=d$id, group=d$id),
+                 countour=TRUE)+
+  scale_color_continuous(limits=c(0,1))
+
+  #scale_color_manual(values=c("1"="red", "2"="green", "3"="blue", "4"="pink", "5"="black"))
+
+# code for animated movement
+
+# Animation
+
+# 
+# anim <-  movement + 
+#   transition_reveal(along=d$time_step) + 
+#   ggtitle("Individuals at time step {frame_along}")
+# animate(anim, nframes = 200, fps = 10)
 
 # un-animated
-# land + movement
 
+# par(mfrow=c(1,2))
+
+land + density_plot + movement
 color.scale
